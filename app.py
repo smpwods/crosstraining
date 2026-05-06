@@ -1,15 +1,13 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import datetime
 
 st.set_page_config(page_title="CrossFit Cloud", layout="wide")
 st.title("🏋️ Mi Programación de CrossTraining")
 
-# Recuperamos la URL de los Secrets
-try:
-    sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-except Exception:
-    sheet_url = ""
+# Conexión
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -27,17 +25,32 @@ with st.sidebar:
     part_c = st.text_area("C. Accesorios")
     
     if st.button("Guardar en mi Diario"):
-        st.error("Para guardar entrenamientos, necesitamos usar la API completa. Primero estabilicemos la lectura con este código.")
+        if usuario:
+            new_data = pd.DataFrame([{
+                "Usuario": usuario,
+                "Fecha": new_date.strftime("%Y-%m-%d"),
+                "Indice": main_exercises,
+                "Warmup": warmup,
+                "Fuerza": part_a,
+                "Metcon": part_b,
+                "Accesorios": part_c
+            }])
+            # Lectura sin parámetros para maximizar compatibilidad
+            old_data = conn.read(ttl=0)
+            updated_df = pd.concat([old_data, new_data], ignore_index=True)
+            conn.update(data=updated_df)
+            st.success("¡Entrenamiento guardado!")
+            st.cache_data.clear()
+        else:
+            st.error("Por favor, escribe tu nombre arriba")
 
 # --- TABLERO PRINCIPAL ---
 st.subheader(f"Tablero de WODs: {usuario if usuario else 'Identifícate'}")
 
-if not sheet_url:
-    st.error("Falta configurar la URL en los Secrets de Streamlit.")
-elif usuario:
+if usuario:
     try:
-        # Lee directamente el CSV de Google Sheets de forma ultra-rápida y sin errores de HTTP
-        data = pd.read_csv(sheet_url)
+        # ttl=0 obliga a la app a mirar el Excel de la imagen image_874615.png en tiempo real
+        data = conn.read(ttl=0)
         
         if not data.empty and 'Usuario' in data.columns:
             user_data = data[data['Usuario'] == usuario]
@@ -57,8 +70,8 @@ elif usuario:
                             st.markdown("**Accesorios:**")
                             st.write(row.get('Accesorios', ''))
             else:
-                st.info("No hay entrenamientos guardados para este atleta.")
+                st.info(f"Hola {usuario}, aún no hay WODs registrados a tu nombre.")
         else:
-            st.warning("La estructura del Excel no es correcta. Asegúrate de tener las columnas: Usuario, Fecha, Indice, Warmup, Fuerza, Metcon, Accesorios")
+            st.warning("Estructura del Excel detectada. Si ves este mensaje, refresca la página.")
     except Exception as e:
-        st.error(f"Error al conectar con Google Sheets: {e}")
+        st.error("Esperando conexión con Google Sheets...")
