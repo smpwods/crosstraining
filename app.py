@@ -36,9 +36,7 @@ with st.sidebar:
                 "Accesorios": part_c
             }])
             # Lectura sin parámetros para maximizar compatibilidad
-            old_data = conn.read(ttl=0)
             old_data = conn.read(worksheet="Sheet1", ttl=0)
-            conn.update(data=updated_df)
             conn.update(worksheet="Sheet1", data=updated_df)
             st.cache_data.clear()
         else:
@@ -50,8 +48,6 @@ st.subheader(f"Tablero de WODs: {usuario if usuario else 'Identifícate'}")
 if usuario:
     try:
         data = conn.read(worksheet="Sheet1", ttl=0)
-        data = conn.read(ttl=0)
-        
         if not data.empty and 'Usuario' in data.columns:
             user_data = data[data['Usuario'] == usuario]
             
