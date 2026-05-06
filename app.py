@@ -37,9 +37,9 @@ with st.sidebar:
             }])
             # Lectura sin parámetros para maximizar compatibilidad
             old_data = conn.read(ttl=0)
-            updated_df = pd.concat([old_data, new_data], ignore_index=True)
+            old_data = conn.read(worksheet="Sheet1", ttl=0)
             conn.update(data=updated_df)
-            st.success("¡Entrenamiento guardado!")
+            conn.update(worksheet="Sheet1", data=updated_df)
             st.cache_data.clear()
         else:
             st.error("Por favor, escribe tu nombre arriba")
@@ -49,7 +49,7 @@ st.subheader(f"Tablero de WODs: {usuario if usuario else 'Identifícate'}")
 
 if usuario:
     try:
-        # ttl=0 obliga a la app a mirar el Excel de la imagen image_874615.png en tiempo real
+        data = conn.read(worksheet="Sheet1", ttl=0)
         data = conn.read(ttl=0)
         
         if not data.empty and 'Usuario' in data.columns:
