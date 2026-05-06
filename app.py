@@ -37,22 +37,24 @@ if st.sidebar.button("Guardar en mi Diario"):
             "Metcon": part_b,
             "Accesorios": part_c
         }])
-        
-        try:
+
+try:
             # Leemos y actualizamos usando explícitamente "Sheet1"
             old_data = conn.read(worksheet="Sheet1", ttl=0)
             updated_df = pd.concat([old_data, new_data], ignore_index=True)
             conn.update(worksheet="Sheet1", data=updated_df)
             
-           st.sidebar.success("¡WOD guardado!")
+            st.sidebar.success("¡WOD guardado!")
             st.cache_data.clear()
             st.rerun()
         except Exception as e:
             st.sidebar.error(f"Error al guardar: {e}")
 
-# --- ESTA ES LA PARTE QUE MUESTRA LA TABLA ---
+# --- ESTO VA PEGADO AL BORDE IZQUIERDO (SIN ESPACIOS) ---
 st.divider()
 if not data.empty:
     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 else:
+    st.info("No hay entrenamientos registrados aún.")
+        
     st.info("No hay entrenamientos registrados aún.")
