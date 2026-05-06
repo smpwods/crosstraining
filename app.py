@@ -8,8 +8,8 @@ st.title("🏋️ Mi Programación de CrossTraining")
 
 # 2. Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
-# Esta línea es la que te falta y es fundamental:
 data = conn.read(ttl=0)
+
 # 3. Identificación en el lateral
 st.sidebar.header("Identificación")
 usuario = st.sidebar.text_input("Nombre de Atleta", value="Sandra")
@@ -38,23 +38,20 @@ if st.sidebar.button("Guardar en mi Diario"):
             "Accesorios": part_c
         }])
 
-try:
-            # Leemos y actualizamos usando explícitamente "Sheet1"
+        try:
             old_data = conn.read(worksheet="Sheet1", ttl=0)
             updated_df = pd.concat([old_data, new_data], ignore_index=True)
             conn.update(worksheet="Sheet1", data=updated_df)
-            
             st.sidebar.success("¡WOD guardado!")
             st.cache_data.clear()
             st.rerun()
         except Exception as e:
             st.sidebar.error(f"Error al guardar: {e}")
 
-# --- ESTO VA PEGADO AL BORDE IZQUIERDO (SIN ESPACIOS) ---
+# --- TABLA DE RESULTADOS ---
 st.divider()
 if not data.empty:
+    st.subheader(f"Tablero de WODs: {usuario}")
     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 else:
-    st.info("No hay entrenamientos registrados aún.")
-        
     st.info("No hay entrenamientos registrados aún.")
