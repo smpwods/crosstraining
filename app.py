@@ -6,9 +6,10 @@ import pandas as pd
 st.set_page_config(page_title="CrossTraining Progress", layout="wide")
 st.title("🏋️ Mi Programación de CrossTraining")
 
-# 2. Conexión (Asegúrate de que los Secrets tengan la URL de edición)
+# 2. Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
-
+# Esta línea es la que te falta y es fundamental:
+data = conn.read(ttl=0)
 # 3. Identificación en el lateral
 st.sidebar.header("Identificación")
 usuario = st.sidebar.text_input("Nombre de Atleta", value="Sandra")
@@ -43,43 +44,15 @@ if st.sidebar.button("Guardar en mi Diario"):
             updated_df = pd.concat([old_data, new_data], ignore_index=True)
             conn.update(worksheet="Sheet1", data=updated_df)
             
-            st.sidebar.success("¡WOD guardado!")
+           st.sidebar.success("¡WOD guardado!")
             st.cache_data.clear()
+            st.rerun()
         except Exception as e:
             st.sidebar.error(f"Error al guardar: {e}")
-    else:
-        st.sidebar.error("Escribe tu nombre")
 
-# 6. Tablero de Visualización
-st.subheader(f"Tablero de WODs: {usuario if usuario else 'Identifícate'}")
-
-if usuario:
-    try:
-        # Esta es la línea que fallaba en image_855e30.png
-        data = conn.read(worksheet="Sheet1", ttl=0)
-        
-        if not data.empty and 'Usuario' in data.columns:
-            user_data = data[data['Usuario'] == usuario]
-            
-            if not user_data.empty:
-                for _, row in user_data.sort_values(by="Fecha", ascending=False).iterrows():
-                    with st.expander(f"📅 {row['Fecha']} - {row['Indice']}"):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.markdown("**Warm-up:**")
-                            st.write(row.get('Warmup', ''))
-                            st.markdown("**A. Fuerza/Skill:**")
-                            st.write(row.get('Fuerza', ''))
-                        with col2:
-                            st.markdown("**B. Metcon (WOD):**")
-                            st.write(row.get('Metcon', ''))
-                            st.markdown("**C. Accesorios:**")
-                            st.write(row.get('Accesorios', ''))
-            else:
-                st.info(f"No hay entrenamientos para {usuario}")
-        else:
-            st.warning("Configura las columnas en tu Excel: Usuario, Fecha, Indice, Warmup, Fuerza, Metcon, Accesorios")
-            
-    except Exception:
-        # Si esto sale, revisa que el botón azul de compartir en Sheets diga "Editor"
-        st.error("Esperando conexión con Google Sheets...")
+# --- ESTA ES LA PARTE QUE MUESTRA LA TABLA ---
+st.divider()
+if not data.empty:
+    st.dataframe(data.sort_index(ascending=False), use_container_width=True)
+else:
+    st.info("No hay entrenamientos registrados aún.")
