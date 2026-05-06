@@ -8,7 +8,12 @@ st.title("🏋️ Mi Programación de CrossTraining")
 
 # 2. Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
-data = conn.read(ttl=0)
+
+# Intentamos leer los datos
+try:
+    data = conn.read(ttl=0)
+except Exception:
+    data = pd.DataFrame()
 
 # 3. Identificación en el lateral
 st.sidebar.header("Identificación")
@@ -39,9 +44,9 @@ if st.sidebar.button("Guardar en mi Diario"):
         }])
 
         try:
-            old_data = conn.read(worksheet="Sheet1", ttl=0)
+            old_data = conn.read(ttl=0)
             updated_df = pd.concat([old_data, new_data], ignore_index=True)
-            conn.update(worksheet="Sheet1", data=updated_df)
+            conn.update(data=updated_df)
             st.sidebar.success("¡WOD guardado!")
             st.cache_data.clear()
             st.rerun()
@@ -54,4 +59,4 @@ if not data.empty:
     st.subheader(f"Tablero de WODs: {usuario}")
     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 else:
-    st.info("No hay entrenamientos registrados aún.")
+    st.info("No hay entrenamientos registrados aún. Introduce uno para empezar.")
