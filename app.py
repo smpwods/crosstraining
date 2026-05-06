@@ -7,13 +7,11 @@ st.title("🏋️ Mi Programación")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Intentamos leer
 try:
     data = conn.read(ttl=0)
 except Exception:
     data = pd.DataFrame()
 
-# Lateral
 st.sidebar.header("Nueva Sesión")
 usuario = st.sidebar.text_input("Atleta", value="Sandra")
 fecha = st.sidebar.date_input("Fecha")
@@ -31,14 +29,13 @@ if st.sidebar.button("Guardar en mi Diario"):
     try:
         current_data = conn.read(ttl=0)
         updated_df = pd.concat([current_data, new_row], ignore_index=True)
-        # Forzamos la actualización sin nombres de hoja
         conn.update(data=updated_df)
         st.sidebar.success("¡Guardado!")
+        st.cache_data.clear()
         st.rerun()
     except Exception as e:
         st.sidebar.error(f"Error: {e}")
 
-# Tabla
 st.divider()
 if not data.empty:
     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
