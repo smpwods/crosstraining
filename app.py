@@ -2,61 +2,49 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración inicial
-st.set_page_config(page_title="CrossTraining Progress", layout="wide")
-st.title("🏋️ Mi Programación de CrossTraining")
+# 1. Configuración
+st.set_page_config(page_title="CrossTraining", layout="wide")
+st.title("🏋️ Mi Programación")
 
-# 2. Conexión
+# 2. Conexión simplificada
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Intentamos leer los datos
+# Intentamos leer los datos de la primera hoja disponible
 try:
     data = conn.read(ttl=0)
 except Exception:
     data = pd.DataFrame()
 
-# 3. Identificación en el lateral
-st.sidebar.header("Identificación")
-usuario = st.sidebar.text_input("Nombre de Atleta", value="Sandra")
-
-st.sidebar.divider()
+# 3. Formulario lateral
 st.sidebar.header("Nueva Sesión")
-
-# 4. Entradas de datos
+usuario = st.sidebar.text_input("Atleta", value="Sandra")
 fecha = st.sidebar.date_input("Fecha")
-main_exercises = st.sidebar.text_input("Índice (Ejercicios del día)")
+indice = st.sidebar.text_input("Ejercicio principal")
 warmup = st.sidebar.text_area("Warm-up")
-part_a = st.sidebar.text_area("A. Fuerza/Skill")
-part_b = st.sidebar.text_area("B. Metcon (WOD)")
-part_c = st.sidebar.text_area("C. Accesorios/Mobility")
+fuerza = st.sidebar.text_area("Fuerza")
+metcon = st.sidebar.text_area("WOD")
+acc = st.sidebar.text_area("Accesorios")
 
-# 5. Lógica para Guardar
 if st.sidebar.button("Guardar en mi Diario"):
-    if usuario:
-        new_data = pd.DataFrame([{
-            "Usuario": usuario,
-            "Fecha": fecha.strftime("%Y-%m-%d"),
-            "Indice": main_exercises,
-            "Warmup": warmup,
-            "Fuerza": part_a,
-            "Metcon": part_b,
-            "Accesorios": part_c
-        }])
+    new_row = pd.DataFrame([{
+        "Usuario": usuario, "Fecha": str(fecha), "Indice": indice,
+        "Warmup": warmup, "Fuerza": fuerza, "Metcon": metcon, "Accesorios": acc
+    }])
+    try:
+        # Buscamos datos actuales y añadimos la nueva fila
+        current_data = conn.read(ttl=0)
+        updated_df = pd.concat([current_data, new_row], ignore_index=True)
+        # Actualizamos la hoja
+        conn.update(data=updated_df)
+        st.sidebar.success("¡Guardado correctamente!")
+        st.balloons()
+        st.rerun()
+    except Exception as e:
+        st.sidebar.error(f"Error: {e}")
 
-        try:
-            old_data = conn.read(ttl=0)
-            updated_df = pd.concat([old_data, new_data], ignore_index=True)
-            conn.update(data=updated_df)
-            st.sidebar.success("¡WOD guardado!")
-            st.cache_data.clear()
-            st.rerun()
-        except Exception as e:
-            st.sidebar.error(f"Error al guardar: {e}")
-
-# --- TABLA DE RESULTADOS ---
+# 4. Tabla central
 st.divider()
 if not data.empty:
-    st.subheader(f"Tablero de WODs: {usuario}")
     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 else:
-    st.info("No hay entrenamientos registrados aún. Introduce uno para empezar.")
+    st.info("Introduce un entrenamiento para empezar.")
