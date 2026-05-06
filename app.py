@@ -2,23 +2,21 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuración de la página
+# 1. Configuración inicial
 st.set_page_config(page_title="CrossTraining Progress", layout="wide")
-
-# Título con icono de CrossFit
 st.title("🏋️ Mi Programación de CrossTraining")
 
-# Conexión con Google Sheets
+# 2. Conexión (Asegúrate de que los Secrets tengan la URL de edición)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- IDENTIFICACIÓN ---
+# 3. Identificación en el lateral
 st.sidebar.header("Identificación")
 usuario = st.sidebar.text_input("Nombre de Atleta", value="Sandra")
 
-# --- FORMULARIO DE NUEVA SESIÓN ---
 st.sidebar.divider()
 st.sidebar.header("Nueva Sesión")
 
+# 4. Entradas de datos
 fecha = st.sidebar.date_input("Fecha")
 main_exercises = st.sidebar.text_input("Índice (Ejercicios del día)")
 warmup = st.sidebar.text_area("Warm-up")
@@ -26,6 +24,7 @@ part_a = st.sidebar.text_area("A. Fuerza/Skill")
 part_b = st.sidebar.text_area("B. Metcon (WOD)")
 part_c = st.sidebar.text_area("C. Accesorios/Mobility")
 
+# 5. Lógica para Guardar
 if st.sidebar.button("Guardar en mi Diario"):
     if usuario:
         new_data = pd.DataFrame([{
@@ -39,26 +38,24 @@ if st.sidebar.button("Guardar en mi Diario"):
         }])
         
         try:
-            # Lectura de la pestaña Sheet1
+            # Leemos y actualizamos usando explícitamente "Sheet1"
             old_data = conn.read(worksheet="Sheet1", ttl=0)
             updated_df = pd.concat([old_data, new_data], ignore_index=True)
-            
-            # Actualización en la pestaña Sheet1
             conn.update(worksheet="Sheet1", data=updated_df)
             
-            st.sidebar.success("¡WOD guardado correctamente!")
+            st.sidebar.success("¡WOD guardado!")
             st.cache_data.clear()
         except Exception as e:
-            st.sidebar.error(f"Error al conectar: {e}")
+            st.sidebar.error(f"Error al guardar: {e}")
     else:
-        st.sidebar.error("Por favor, escribe tu nombre arriba")
+        st.sidebar.error("Escribe tu nombre")
 
-# --- TABLERO PRINCIPAL ---
+# 6. Tablero de Visualización
 st.subheader(f"Tablero de WODs: {usuario if usuario else 'Identifícate'}")
 
 if usuario:
     try:
-        # Lectura para mostrar datos en el tablero
+        # Esta es la línea que fallaba en image_855e30.png
         data = conn.read(worksheet="Sheet1", ttl=0)
         
         if not data.empty and 'Usuario' in data.columns:
@@ -79,9 +76,10 @@ if usuario:
                             st.markdown("**C. Accesorios:**")
                             st.write(row.get('Accesorios', ''))
             else:
-                st.info(f"Aún no hay entrenamientos registrados para {usuario}")
+                st.info(f"No hay entrenamientos para {usuario}")
         else:
-            st.warning("La base de datos está vacía o no tiene el formato correcto.")
+            st.warning("Configura las columnas en tu Excel: Usuario, Fecha, Indice, Warmup, Fuerza, Metcon, Accesorios")
             
     except Exception:
+        # Si esto sale, revisa que el botón azul de compartir en Sheets diga "Editor"
         st.error("Esperando conexión con Google Sheets...")
